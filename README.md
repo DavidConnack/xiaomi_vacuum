@@ -1,4 +1,4 @@
-This is a fork of https://github.com/Concentricc/xiaomi_vacuum for displaying names in fan speeds and make vacuum status visible in vacuum-card 
+
 
 # xiaomi_vacuum
 custom component for Vacuum 1C STYTJ01ZHM (dreame.vacuum.mc1808).
