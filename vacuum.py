@@ -43,7 +43,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     extra=vol.ALLOW_EXTRA,
 )
 
+ATTR_STATUS = "status"
 ATTR_FAN_SPEED = "fan_speed"
+ATTR_CLEANING_TIME = "cleaning_time"
+ATTR_CLEANING_AREA = "cleaning_area"
 ATTR_MAIN_BRUSH_LEFT_TIME = "main_brush_time_left"
 ATTR_MAIN_BRUSH_LIFE_LEVEL = "main_brush_life_level"
 ATTR_SIDE_BRUSH_LEFT_TIME = "side_brush_time_left"
@@ -75,7 +78,7 @@ STATE_CODE_TO_STATE = {
 SPEED_CODE_TO_NAME = {
     0: "Silent",
     1: "Standard",
-    2: "Medium",
+    2: "Strong",
     3: "Turbo",
 }
 
@@ -124,6 +127,8 @@ class MiroboVacuum(StateVacuumEntity):
         self._filter_left_time = None
 
         self._total_clean_count = None
+        self._cleaning_area = None
+        self._cleaning_time = None		
 
         
 
@@ -157,7 +162,7 @@ class MiroboVacuum(StateVacuumEntity):
         if self.vacuum_state is not None:
             speed = self._current_fan_speed
             if speed in self._fan_speeds_reverse:
-                return self._fan_speeds_reverse[speed]
+                return SPEED_CODE_TO_NAME[int(self._current_fan_speed)]
 
             _LOGGER.debug("Unable to find reverse for %s", speed)
 
@@ -166,20 +171,23 @@ class MiroboVacuum(StateVacuumEntity):
     @property
     def fan_speed_list(self):
         """Get the list of available fan speed steps of the vacuum cleaner."""
-        return list(self._fan_speeds) if self._fan_speeds else []
+        return list(self._fan_speeds_reverse)
 
     @property
     def device_state_attributes(self):
         """Return the specific state attributes of this vacuum cleaner."""
         if self.vacuum_state is not None:
             return {
-                ATTR_FAN_SPEED: self._current_fan_speed,
+                ATTR_STATUS: STATE_CODE_TO_STATE[int(self.vacuum_state)],
+				ATTR_FAN_SPEED: SPEED_CODE_TO_NAME[int(self._current_fan_speed)],
                 ATTR_MAIN_BRUSH_LEFT_TIME: self._main_brush_time_left,
                 ATTR_MAIN_BRUSH_LIFE_LEVEL: self._main_brush_life_level,
                 ATTR_SIDE_BRUSH_LEFT_TIME: self._side_brush_time_left,
                 ATTR_SIDE_BRUSH_LIFE_LEVEL: self._side_brush_life_level,
                 ATTR_FILTER_LIFE_LEVEL: self._filter_life_level,
                 ATTR_FILTER_LEFT_TIME: self._filter_left_time,
+                ATTR_CLEANING_AREA: self._cleaning_area,
+                ATTR_CLEANING_TIME: self._cleaning_time,				
                 ATTR_CLEANING_TOTAL_TIME: self._total_clean_count,
             } 
 
@@ -222,8 +230,8 @@ class MiroboVacuum(StateVacuumEntity):
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
         """Set fan speed."""
-        if fan_speed in self._fan_speeds:
-            fan_speed = self._fan_speeds[fan_speed]
+        if fan_speed in self._fan_speeds_reverse:
+            fan_speed = self._fan_speeds_reverse[fan_speed]
         else:
             try:
                 fan_speed = int(fan_speed)
@@ -262,6 +270,9 @@ class MiroboVacuum(StateVacuumEntity):
 
             self._filter_life_level = state.filter_life_level
             self._filter_left_time = state.filter_left_time
+			
+            self._cleaning_area = state.area
+            self._cleaning_time = state.timer
 
             
 
