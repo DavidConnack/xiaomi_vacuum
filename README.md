@@ -1,5 +1,3 @@
-
-
 # xiaomi_vacuum
 custom component for Vacuum 1C STYTJ01ZHM (dreame.vacuum.mc1808).
 Rough around the edges, not all the commands work, not all attributes set up.
