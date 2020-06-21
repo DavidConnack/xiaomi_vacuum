@@ -9,6 +9,7 @@ add to custom components folder and
 vacuum:
   - platform: xiaomi_vacuum
     host: <ip>
-    token: <token>
+    token: "<token>"
+    name: <name>
 ```
 works with https://github.com/denysdovhan/vacuum-card
