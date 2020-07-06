@@ -2,6 +2,7 @@
 custom component for Vacuum 1C STYTJ01ZHM (dreame.vacuum.mc1808).
 Rough around the edges, not all the commands work, not all attributes set up.
 Needs a clean up.
+
 Using https://github.com/rytilahti/python-miio for the protocol.
 
 Two possibilities for installation :
