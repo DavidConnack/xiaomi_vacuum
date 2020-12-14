@@ -1,3 +1,5 @@
+This is a fork of Concentricc/xiaomi_vacuum with zone cleaning and small bug fixes
+
 # xiaomi_vacuum
 custom component for Vacuum 1C STYTJ01ZHM (dreame.vacuum.mc1808).
 Rough around the edges, not all the commands work, not all attributes set up.
