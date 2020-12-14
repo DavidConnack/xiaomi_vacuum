@@ -1,0 +1,7 @@
+{
+  "domain": "xiaomi_vacuum",
+  "name": "Xiaomi Vacuum",
+  "documentation": "",
+  "requirements": [],
+  "codeowners": ["@concentricc"]
+}
