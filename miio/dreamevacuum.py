@@ -139,9 +139,9 @@ class DreameStatus:
         default=None
     )
     # piid: 4 (area): (string, unit: None) (acc: ['read', 'write'], value-list: [], value-range: None)
-    area: str = field(metadata={"siid": 18, "piid": 4, "access": ["read", "write"]},default=None)
+    area: str = field(metadata={"siid": 18, "piid": 3, "access": ["read", "write"]},default=None)
     # piid: 5 (timer): (string, unit: None) (acc: ['read', 'write'], value-list: [], value-range: None)
-    timer: str = field(metadata={"siid": 18, "piid": 5, "access": ["read", "write"]},default=None)
+    timer: str = field(metadata={"siid": 18, "piid": 2, "access": ["read", "write"]},default=None)
     # piid: 6 (清扫模式): (int32, unit: none) (acc: ['read', 'write', 'notify'], value-list: [{'value': 0, 'description': '安静'}, {'value': 1, 'description': '标准'}, {'value': 2, 'description': '中档'}, {'value': 3, 'description': '强力'}], value-range: None)
     fan_speed: int = field(
         metadata={
@@ -247,6 +247,7 @@ class DreameStatus:
         metadata={"siid": 25, "piid": 1, "access": ["read", "notify"]},
         default=None
     )
+    
 
 
 class DreameVacuum(MiotDevice):
@@ -270,8 +271,9 @@ class DreameVacuum(MiotDevice):
         }
         return self.send("action", payload)
 
-    @command()
+    @command(click.argument("speed", type=int))
     def set_fan_speed(self, speed):
+        """Set fan speed"""
         return self.set_property(fan_speed=speed)
         
     # siid 2: (Battery): 2 props, 1 actions
@@ -279,7 +281,7 @@ class DreameVacuum(MiotDevice):
     @command()
     def return_home(self) -> None:
         """aiid 1 Start Charge: in: [] -> out: []"""
-        return self.call_action(2, 1)
+        return self.call_action(2, 1) 
 
     # siid 3: (Robot Cleaner): 2 props, 2 actions
     # aiid 1 Start Sweep: in: [] -> out: []
@@ -337,10 +339,16 @@ class DreameVacuum(MiotDevice):
         """Stop cleaning."""
         return self.call_action(18, 2)
 
+    @command(click.argument("coords", type=str))
+    def zone_cleanup(self, coords) -> None:
+        """Start zone cleaning."""
+        payload = [{"piid": 1, "value": 19},{"piid": 21, "value": coords}]
+        return self.call_action(18, 1, payload)   
+
     # siid 21: (remote): 2 props, 3 actions
     # aiid 1 start-remote: in: [1, 2] -> out: []
     @command()
-    def start_remote(self, _) -> None:
+    def start_remote(self) -> None:
         """aiid 1 start-remote: in: [1, 2] -> out: []"""
         return self.call_action(21, 1)
 
@@ -366,9 +374,9 @@ class DreameVacuum(MiotDevice):
     # siid 24: (audio): 2 props, 3 actions
     # aiid 1 : in: [] -> out: []
     @command()
-    def audio_position(self) -> None:
+    def audio_position(self,percent) -> None:
         """TODO"""
-        return self.call_action(24, 1)
+        return self.set_property(audio_volume=percent)
 
     # aiid 2 : in: [] -> out: []
     @command()

@@ -27,8 +27,6 @@ from homeassistant.components.vacuum import (
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_TOKEN
 from homeassistant.helpers import config_validation as cv, entity_platform
 
-from . import DOMAIN
-
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Xiaomi Vacuum cleaner"
@@ -44,6 +42,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 ATTR_STATUS = "status"
+ATTR_ERROR = "error"
 ATTR_FAN_SPEED = "fan_speed"
 ATTR_CLEANING_TIME = "cleaning_time"
 ATTR_CLEANING_AREA = "cleaning_area"
@@ -54,6 +53,10 @@ ATTR_SIDE_BRUSH_LIFE_LEVEL = "side_brush_life_level"
 ATTR_FILTER_LIFE_LEVEL = "filter_life_level"
 ATTR_FILTER_LEFT_TIME = "filter_left_time"
 ATTR_CLEANING_TOTAL_TIME = "total_cleaning_count"
+ATTR_ZONE_ARRAY = "zone"
+ATTR_ZONE_REPEATER = "repeats"
+
+SERVICE_CLEAN_ZONE = "vacuum_clean_zone"
 
 SUPPORT_XIAOMI = (
     SUPPORT_STATE
@@ -82,6 +85,38 @@ SPEED_CODE_TO_NAME = {
     3: "Turbo",
 }
 
+ERROR_CODE_TO_ERROR = {
+    0: "NoError",
+    1: "Drop",
+    2: "Cliff",
+    3: "Bumper",
+    4: "Gesture",
+    5: "Bumper_repeat",
+    6: "Drop_repeat",
+    7: "Optical_flow",
+    8: "No_box",
+    9: "No_tankbox",
+    10: "Waterbox_empty",
+    11: "Box_full",
+    12: "Brush",
+    13: "Side_brush",
+    14: "Fan",
+    15: "Left_wheel_motor",
+    16: "Right_wheel_motor",
+    17: "Turn_suffocate",
+    18: "Forward_suffocate",
+    19: "Charger_get",
+    20: "Battery_low",
+    21: "Charge_fault",
+    22: "Battery_percentage",
+    23: "Heart",
+    24: "Camera_occlusion",
+    25: "Camera_fault",
+    26: "Event_battery",
+    27: "Forward_looking",
+    28: "Gyroscope",
+}
+
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the Xiaomi vacuum cleaner robot platform."""
@@ -101,6 +136,20 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async_add_entities([mirobo], update_before_add=True)
 
+    platform = entity_platform.current_platform.get()
+
+    platform.async_register_entity_service(
+        SERVICE_CLEAN_ZONE,
+        {
+            vol.Required(ATTR_ZONE_ARRAY): cv.string,
+            vol.Required(ATTR_ZONE_REPEATER): vol.All(
+                vol.Coerce(int), vol.Clamp(min=1, max=3)
+            ),
+        },
+        MiroboVacuum.async_clean_zone.__name__,
+    )
+
+
 class MiroboVacuum(StateVacuumEntity):
     """Representation of a Xiaomi Vacuum cleaner robot."""
 
@@ -113,6 +162,7 @@ class MiroboVacuum(StateVacuumEntity):
         self._fan_speeds_reverse = None
 
         self.vacuum_state = None
+        self.vacuum_error = None
         self.battery_percentage = None
         
         self._current_fan_speed = None
@@ -151,6 +201,19 @@ class MiroboVacuum(StateVacuumEntity):
                 return None
 
     @property
+    def error(self):
+        """Return the error of the vacuum cleaner."""
+        if self.vacuum_error is not None:
+            try:
+                return ERROR_CODE_TO_ERROR.get(self.vacuum_error, "Unknown")
+            except KeyError:
+                _LOGGER.error(
+                    "ERROR_CODE not supported: %s",
+                    self.vacuum_error,
+                )
+                return None
+
+    @property
     def battery_level(self):
         """Return the battery level of the vacuum cleaner."""
         if self.vacuum_state is not None:
@@ -162,7 +225,7 @@ class MiroboVacuum(StateVacuumEntity):
         if self.vacuum_state is not None:
             speed = self._current_fan_speed
             if speed in self._fan_speeds_reverse:
-                return SPEED_CODE_TO_NAME[int(self._current_fan_speed)]
+                return SPEED_CODE_TO_NAME.get(self._current_fan_speed, "Unknown")
 
             _LOGGER.debug("Unable to find reverse for %s", speed)
 
@@ -179,7 +242,8 @@ class MiroboVacuum(StateVacuumEntity):
         if self.vacuum_state is not None:
             return {
                 ATTR_STATUS: STATE_CODE_TO_STATE[int(self.vacuum_state)],
-				ATTR_FAN_SPEED: SPEED_CODE_TO_NAME[int(self._current_fan_speed)],
+                ATTR_ERROR:  ERROR_CODE_TO_ERROR.get(self.vacuum_error, "Unknown"),
+				ATTR_FAN_SPEED: SPEED_CODE_TO_NAME.get(self._current_fan_speed, "Unknown"),
                 ATTR_MAIN_BRUSH_LEFT_TIME: self._main_brush_time_left,
                 ATTR_MAIN_BRUSH_LIFE_LEVEL: self._main_brush_life_level,
                 ATTR_SIDE_BRUSH_LEFT_TIME: self._side_brush_time_left,
@@ -220,6 +284,13 @@ class MiroboVacuum(StateVacuumEntity):
         """Stop the vacuum cleaner."""
         await self._try_command("Unable to stop: %s", self._vacuum.stop)
 
+    async def async_clean_zone(self, zone, repeats=1):
+        """Clean selected area."""
+        try:
+            await self.hass.async_add_executor_job(self._vacuum.zone_cleanup, zone)
+        except (OSError, DeviceException) as exc:
+            _LOGGER.error("Unable to send zoned_clean command to the vacuum: %s", exc)
+
     async def async_pause(self):
         """Pause the cleaning task."""
         await self._try_command("Unable to set start/pause: %s", self._vacuum.stop)
@@ -243,15 +314,14 @@ class MiroboVacuum(StateVacuumEntity):
                 )
                 return
         await self._try_command(
-            "Unable to set fan speed: %s", self._vacuum.set_fan_speed, fan_speed
-        )
-    
+            "Unable to set fan speed: %s", self._vacuum.set_fan_speed, fan_speed)    
 
     def update(self):
         """Fetch state from the device."""
         try:
             state = self._vacuum.status()
             self.vacuum_state = state.status
+            self.vacuum_error = state.error
 
             self._fan_speeds = SPEED_CODE_TO_NAME
             self._fan_speeds_reverse = {v: k for k, v in self._fan_speeds.items()}
@@ -274,7 +344,5 @@ class MiroboVacuum(StateVacuumEntity):
             self._cleaning_area = state.area
             self._cleaning_time = state.timer
 
-            
-
         except OSError as exc:
-            _LOGGER.error("Got OSError while fetching the state: %s", exc)
+            _LOGGER.error("Got OSError while fetching the state: %s", exc) 
