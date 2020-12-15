@@ -139,9 +139,9 @@ class DreameStatus:
         default=None
     )
     # piid: 4 (area): (string, unit: None) (acc: ['read', 'write'], value-list: [], value-range: None)
-    area: str = field(metadata={"siid": 18, "piid": 4, "access": ["read", "write"]},default=None)
+    area: str = field(metadata={"siid": 18, "piid": 3, "access": ["read", "write"]},default=None)
     # piid: 5 (timer): (string, unit: None) (acc: ['read', 'write'], value-list: [], value-range: None)
-    timer: str = field(metadata={"siid": 18, "piid": 5, "access": ["read", "write"]},default=None)
+    timer: str = field(metadata={"siid": 18, "piid": 2, "access": ["read", "write"]},default=None)
     # piid: 6 (清扫模式): (int32, unit: none) (acc: ['read', 'write', 'notify'], value-list: [{'value': 0, 'description': '安静'}, {'value': 1, 'description': '标准'}, {'value': 2, 'description': '中档'}, {'value': 3, 'description': '强力'}], value-range: None)
     fan_speed: int = field(
         metadata={
