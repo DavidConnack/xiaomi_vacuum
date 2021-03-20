@@ -58,6 +58,7 @@ ATTR_ZONE_REPEATER = "repeats"
 ATTR_WATER_LEVEL = "water_level"
 
 SERVICE_CLEAN_ZONE = "vacuum_clean_zone"
+SERVICE_WATER_LEVEL = "set_water_level"
 
 SUPPORT_XIAOMI = (
     SUPPORT_STATE
@@ -156,6 +157,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         MiroboVacuum.async_clean_zone.__name__,
     )
 
+    platform.async_register_entity_service(
+        SERVICE_WATER_LEVEL,
+        {
+            vol.Required(ATTR_WATER_LEVEL): cv.string,
+        },
+        MiroboVacuum.async_set_water_level.__name__,
+    )
 
 class MiroboVacuum(StateVacuumEntity):
     """Representation of a Xiaomi Vacuum cleaner robot."""
