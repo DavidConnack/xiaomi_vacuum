@@ -281,7 +281,7 @@ class MiroboVacuum(StateVacuumEntity):
                 ATTR_CLEANING_TIME: self._cleaning_time,				
                 ATTR_CLEANING_TOTAL_TIME: self._total_clean_count,
 				ATTR_WATER_LEVEL: WATER_CODE_TO_NAME.get(self._current_water_level, "Unknown"),
-				"water_level_list": "Low, Med, High",
+				"water_level_list": ["Low", "Med", "High"],
             } 
 
 
