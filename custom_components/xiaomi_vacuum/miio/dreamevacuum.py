@@ -65,6 +65,10 @@ class VacuumSpeed(Enum):
     Medium = 2
     Turbo = 3
 
+class WaterLevel(Enum):
+    Low = 1
+    Medium = 2
+    High = 3
 
 @dataclass
 class DreameStatus:
@@ -184,6 +188,19 @@ class DreameStatus:
         metadata={"siid": 18, "piid": 18, "access": ["read", "notify"]},
         default=None
     )
+
+    # piid: 20 (): 
+    water_level: int = field(
+        metadata={
+            "siid": 18,
+            "piid": 20,
+            "access": ["read", "write", "notify"],
+            "enum": WaterLevel,
+        },
+        default=None
+    )
+
+
     # siid 19: (consumable): 3 props, 0 actions
     # piid: 1 (life-sieve): (string, unit: None) (acc: ['read', 'write'], value-list: [], value-range: None)
     life_sieve: str = field(
@@ -395,3 +412,9 @@ class DreameVacuum(MiotDevice):
     def test_sound(self) -> None:
         """aiid 3 : in: [] -> out: []"""
         return self.call_action(24, 3)
+
+    @command(click.argument("water", type=int))
+    def set_water_level(self, water):
+        """Set water level"""
+        return self.set_property(water_level=water)
+        
