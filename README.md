@@ -1,3 +1,6 @@
+#🚧This Repo is no longer mainained🚧
+I have flashed my 1C with Valetudo, and suggest you do the same 🙂
+
 # xiaomi_vacuum
 custom component for Vacuum 1C STYTJ01ZHM (dreame.vacuum.mc1808).
 Rough around the edges, not all the commands work, not all attributes set up.
