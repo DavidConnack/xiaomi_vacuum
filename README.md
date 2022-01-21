@@ -1,4 +1,5 @@
-#🚧This Repo is no longer mainained🚧
+# 🚧This Repo is no longer mainained🚧
+
 I have flashed my 1C with Valetudo, and suggest you do the same 🙂
 
 # xiaomi_vacuum
